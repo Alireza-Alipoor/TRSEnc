@@ -34,3 +34,17 @@ def transpose_matrix(matrix: list[str]) -> np.ndarray:
     byte_matrix = np.array([list(row.encode('utf-8'))
                            for row in matrix], dtype=np.uint8)
     return byte_matrix.T
+
+
+def encode_rows_with_rs(transposed_matrix: np.ndarray) -> list[bytes]:
+    """
+    Apply Reed-Solomon encoding to each row of the transposed matrix.
+    Uses maximum number of parity bytes (255 - k).
+    """
+    encoded_rows = []
+    for row in transposed_matrix:
+        k = len(row)
+        rs = RSCodec(RS_SYMBOL_SIZE - k)
+        encoded_row = rs.encode(bytes(row))
+        encoded_rows.append(encoded_row)
+    return encoded_rows
