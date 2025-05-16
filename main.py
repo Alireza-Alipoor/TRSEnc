@@ -1,3 +1,5 @@
+import argparse
+import os
 from reedsolo import RSCodec
 import numpy as np
 
@@ -68,3 +70,25 @@ def process_file(input_path: str, output_path: str, row_length: int) -> None:
     transposed = transpose_matrix(matrix)
     encoded_rows = encode_rows_with_rs(transposed)
     write_encoded_output(encoded_rows, output_path)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Transpose and Reed-Solomon encode a large text file.")
+    parser.add_argument("input_file", help="Path to the input text file")
+    parser.add_argument(
+        "output_file",
+        help="Path to save the encoded binary file")
+    parser.add_argument("--row-length", type=int, default=64,
+                        help="Number of characters per row (max 255)")
+
+    args = parser.parse_args()
+
+    if not os.path.exists(args.input_file):
+        raise FileNotFoundError(f"Input file '{args.input_file}' not found.")
+
+    process_file(args.input_file, args.output_file, args.row_length)
+
+
+if __name__ == "__main__":
+    main()
