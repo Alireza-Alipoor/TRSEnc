@@ -48,3 +48,12 @@ def encode_rows_with_rs(transposed_matrix: np.ndarray) -> list[bytes]:
         encoded_row = rs.encode(bytes(row))
         encoded_rows.append(encoded_row)
     return encoded_rows
+
+
+def write_encoded_output(encoded_rows: list[bytes], output_path: str) -> None:
+    """
+    Write encoded rows to a binary output file.
+    """
+    with open(output_path, 'wb') as f:
+        for row in encoded_rows:
+            f.write(row)
