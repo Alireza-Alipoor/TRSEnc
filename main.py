@@ -1,4 +1,5 @@
 from reedsolo import RSCodec
+import numpy as np
 
 # Reed-Solomon parameters
 RS_SYMBOL_SIZE = 255
@@ -24,3 +25,12 @@ def chunk_text_to_matrix(text: str, row_length: int) -> list[str]:
     padded_text = text + ('\x00' * padding_needed)
 
     return [padded_text[i:i + row_length] for i in range(0, len(padded_text), row_length)]
+
+
+def transpose_matrix(matrix: list[str]) -> np.ndarray:
+    """
+    Convert list of strings into a NumPy matrix and transpose it.
+    """
+    byte_matrix = np.array([list(row.encode('utf-8'))
+                           for row in matrix], dtype=np.uint8)
+    return byte_matrix.T
