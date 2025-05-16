@@ -1,0 +1,2 @@
+numpy==2.2.5
+reedsolo==1.7.0
