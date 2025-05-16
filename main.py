@@ -57,3 +57,14 @@ def write_encoded_output(encoded_rows: list[bytes], output_path: str) -> None:
     with open(output_path, 'wb') as f:
         for row in encoded_rows:
             f.write(row)
+
+
+def process_file(input_path: str, output_path: str, row_length: int) -> None:
+    """
+    Full pipeline: read, chunk, transpose, encode, and write.
+    """
+    text = read_text_file(input_path)
+    matrix = chunk_text_to_matrix(text, row_length)
+    transposed = transpose_matrix(matrix)
+    encoded_rows = encode_rows_with_rs(transposed)
+    write_encoded_output(encoded_rows, output_path)
