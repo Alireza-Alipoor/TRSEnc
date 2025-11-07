@@ -1,7 +1,7 @@
 encoding:
   reed_solomon:
-    nsize: 255                       # Number of error correction symbols (ECC)
-    nsym: 32                         # Total block size (default: 255 for GF(2^8))
+    nsize: 255                       # Total block size (default: 255 for GF(2^8))
+    nsym: 32                         # Number of error correction symbols (ECC)
     fcr: 0                           # First consecutive root
     prim: 0x11d                      # Primitive polynomial
     generator: 2                     # Generator element
