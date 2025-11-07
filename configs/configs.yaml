@@ -1,0 +1,5 @@
+encoding:
+  reed_solomon:
+    nsize: 255
+    nsym: 32
+decoding:
