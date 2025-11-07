@@ -87,3 +87,4 @@ class Metadata1Appender:
         except Exception as e:
             logger.error(f"Failed to process file {self.file_path}: {e}")
             raise
+        return self.dest_path
