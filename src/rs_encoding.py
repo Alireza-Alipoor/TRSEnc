@@ -21,7 +21,6 @@ class RSEncoding:
         self.output_size = None
 
     def transpose(self):
-
         try:
             file_size = os.path.getsize(self.in_path)
             if self.output_size is None:
@@ -53,7 +52,11 @@ class RSEncoding:
             dst.flush()
             logger.info(f"Transposed file written to {out_path}")
             logger.info(f"Input: {rows}*{cols}, Output: {cols}*{rows}")
-
+            try:
+                self.in_path.unlink()
+                logger.info(f"{self.in_path} removed")
+            except Exception as e:
+                logger.error(e)
             self.out_path = out_path
             return out_path
 
