@@ -62,32 +62,31 @@ class RSEncoding:
             return None
 
     def encode(self):
-        with open(self.in_path, "rb") as fin, open(self.out_path, "wb") as fout:
-            try:
-                with open(self.in_path, "rb") as fin, open(self.out_path, "wb") as fout:
-                    while True:
-                        block = fin.read(self.block_size)
-                        if not block:
-                            break
+        try:
+            with open(self.in_path, "rb") as fin, open(self.out_path, "wb") as fout:
+                while True:
+                    block = fin.read(self.block_size)
+                    if not block:
+                        break
 
-                        # Pad if necessary
-                        if len(block) < self.block_size:
-                            padding = b"\x00" * (self.block_size - len(block))
-                            block += padding
-                            logger.debug(f"Padded block with {len(padding)} zeros")
+                    # Pad if necessary
+                    if len(block) < self.block_size:
+                        padding = b"\x00" * (self.block_size - len(block))
+                        block += padding
+                        logger.debug(f"Padded block with {len(padding)} zeros")
 
-                        encoded_block = self.RS.encode(block)
-                        fout.write(encoded_block)
-                self.output_size = self.out_path.stat().st_size
-                logger.info(f"Successfully encoded {self.in_path} -> {self.out_path}")
-                logger.info(f"Output size: {self.output_size} bytes")
+                    encoded_block = self.RS.encode(block)
+                    fout.write(encoded_block)
+            self.output_size = self.out_path.stat().st_size
+            logger.info(f"Successfully encoded {self.in_path} -> {self.out_path}")
+            logger.info(f"Output size: {self.output_size} bytes")
 
-            except Exception as e:
-                logger.error(f"Encoding failed: {str(e)}")
-                # Clean up partial output on failure
-                if self.out_path.exists():
-                    os.remove(self.out_path)
-                return False
+        except Exception as e:
+            logger.error(f"Encoding failed: {str(e)}")
+            # Clean up partial output on failure
+            if self.out_path.exists():
+                os.remove(self.out_path)
+            return False
 
     def run(self):
         if not self.encode():
