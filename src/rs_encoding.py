@@ -56,7 +56,7 @@ class RSEncoding:
                 self.in_path.unlink()
                 logger.info(f"{self.in_path} removed")
             except Exception as e:
-                logger.error(e)
+                logger.error(f"deleting {self.in_path} failed")
             self.out_path = out_path
             return out_path
 
