@@ -11,7 +11,7 @@ class Metadata1Appender:
 
     def __init__(self, file_path: Path, config):
         self.file_path = file_path
-        self.dest_dir = Path(config["destination_directory"])
+        self.dest_dir = Path(config["encoding"]["destination_directory"])
 
         if not self.validate_file():
             raise FileNotFoundError(f"Source file {file_path} is invalid")

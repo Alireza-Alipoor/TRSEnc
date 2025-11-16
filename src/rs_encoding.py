@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 class RSEncoding:
     def __init__(self, config, in_path: Path):
-        self.rs_params = config["reed_solomon"]
+        self.rs_params = config["encoding"]["reed_solomon"]
         self.block_size = self.rs_params["nsize"] - self.rs_params["nsym"]
         self.RS = RSCodec(**self.rs_params)
         self.in_path = in_path
@@ -22,9 +22,9 @@ class RSEncoding:
 
     def transpose(self):
         try:
-            file_size = os.path.getsize(self.in_path)
+            file_size = self.in_path.stat().st_size
             if self.output_size is None:
-                self.output_size = os.path.getsize(self.out_path)
+                self.output_size = self.out_path.stat().st_size
             # Get matrix shape from config (must match total bytes)
             cols = self.rs_params["nsize"]
             rows = self.output_size // cols

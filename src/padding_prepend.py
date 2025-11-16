@@ -10,7 +10,7 @@ class PaddingAdder:
     def __init__(self, in_path: Path, config):
         self.in_path = in_path
         self.input_size = in_path.stat().st_size
-        self.padding_size = min(config["padding_size"], self.input_size)
+        self.padding_size = min(config["encoding"]["padding_size"], self.input_size)
 
     def add_padding(self):
         try:
