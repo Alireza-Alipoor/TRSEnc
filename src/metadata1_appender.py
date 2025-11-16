@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 
 class Metadata1Appender:
 
-    def __init__(self, file_path: Path, config):
+    def __init__(self, config, file_path: Path):
         self.file_path = file_path
         self.dest_dir = Path(config["encoding"]["destination_directory"])
 
@@ -66,7 +66,7 @@ class Metadata1Appender:
         try:
             self.dest_dir.mkdir(exist_ok=True, parents=True)
             shutil.copy(self.file_path, self.dest_path)
-            logger.debug(f"File copied from {self.file_path} to {self.dest_path}")
+            logger.info(f"File copied from {self.file_path} to {self.dest_path}")
         except (shutil.Error, IOError) as e:
             logger.error(f"Failed to copy file to {self.dest_path}: {e}")
             raise
@@ -75,14 +75,14 @@ class Metadata1Appender:
         """Main execution method with comprehensive error handling"""
         try:
             logger.info(
-                f"Starting metadata processing for {self.file_path} (size: {self.file_size})"
+                f"Starting metadata1 processing for {self.file_path} (size: {self.file_size})"
             )
 
             self.copy_file()
             logger.info(f"File copied successfully to {self.dest_path}")
 
             self.append_metadata()
-            logger.info("Metadata appended successfully")
+            logger.info("Metadata1 appended successfully")
 
         except Exception as e:
             logger.error(f"Failed to process file {self.file_path}: {e}")
