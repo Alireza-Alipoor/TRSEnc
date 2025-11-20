@@ -25,7 +25,7 @@ class RSEncoding:
             file_size = self.in_path.stat().st_size
             if self.output_size is None:
                 self.output_size = self.out_path.stat().st_size
-            # Get matrix shape from config (must match total bytes)
+
             cols = self.rs_params["nsize"]
             rows = self.output_size // cols
 
@@ -38,12 +38,10 @@ class RSEncoding:
                 self.in_path.parent / f"{self.in_path.stem}_T{self.in_path.suffix}"
             )
 
-            # Create memory maps for input and output
             src = np.memmap(self.in_path, dtype=np.uint8, mode="r", shape=(rows, cols))
             dst = np.memmap(out_path, dtype=np.uint8, mode="w+", shape=(cols, rows))
 
-            # Transpose in manageable blocks
-            block = 1024  # tune for your memory (e.g., 4096 for faster I/O)
+            block = 1024
             for i in range(0, rows, block):
                 for j in range(0, cols, block):
                     sub = src[i : i + block, j : j + block]
@@ -52,17 +50,19 @@ class RSEncoding:
             dst.flush()
             logger.info(f"Transposed file written to {out_path}")
             logger.info(f"Input: {rows}*{cols}, Output: {cols}*{rows}")
+
             try:
                 self.in_path.unlink()
                 logger.info(f"{self.in_path} removed")
             except Exception as e:
-                logger.error(f"deleting {self.in_path} failed")
+                logger.error(f"deleting {self.in_path} failed: {e}")
+
             self.out_path = out_path
             return out_path
 
         except Exception as e:
             logger.error(f"Transpose failed: {e}")
-            return None
+            raise RuntimeError(f"Transpose failed for {self.in_path}") from e
 
     def encode(self):
         try:
@@ -72,7 +72,6 @@ class RSEncoding:
                     if not block:
                         break
 
-                    # Pad if necessary
                     if len(block) < self.block_size:
                         padding = b"\x00" * (self.block_size - len(block))
                         block += padding
@@ -80,19 +79,26 @@ class RSEncoding:
 
                     encoded_block = self.RS.encode(block)
                     fout.write(encoded_block)
+
             self.output_size = self.out_path.stat().st_size
             logger.info(f"Successfully encoded {self.in_path} -> {self.out_path}")
             logger.info(f"Output size: {self.output_size} bytes")
 
         except Exception as e:
             logger.error(f"Encoding failed: {str(e)}")
+
             # Clean up partial output on failure
-            if self.out_path.exists():
-                os.remove(self.out_path)
-            return False
+            try:
+                if self.out_path.exists():
+                    os.remove(self.out_path)
+            except Exception as cleanup_err:
+                logger.error(
+                    f"Failed to remove partial output {self.out_path}: {cleanup_err}"
+                )
+
+            # Raise an explicit error so callers don't have to deal with False/None
+            raise RuntimeError(f"Encoding failed for {self.in_path}") from e
 
     def run(self):
-        if not self.encode():
-            logger.error("Encode failed — skipping transpose.")
-            return False
+        self.encode()
         return self.transpose()
