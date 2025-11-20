@@ -22,47 +22,53 @@ class RSEncoding:
 
     def transpose(self):
         try:
-            file_size = self.in_path.stat().st_size
-            if self.output_size is None:
-                self.output_size = self.out_path.stat().st_size
+            src_path = self.out_path
+
+            file_size = src_path.stat().st_size
 
             cols = self.rs_params["nsize"]
-            rows = self.output_size // cols
 
-            if rows * cols != file_size:
+            if file_size % cols != 0:
                 raise ValueError(
-                    f"File size ({file_size}) doesn't match rows*cols ({rows*cols})"
+                    f"Encoded file size ({file_size}) is not divisible by cols ({cols})"
                 )
 
-            out_path = (
-                self.in_path.parent / f"{self.in_path.stem}_T{self.in_path.suffix}"
-            )
+            rows = file_size // cols
 
-            src = np.memmap(self.in_path, dtype=np.uint8, mode="r", shape=(rows, cols))
+            out_path = src_path.parent / f"{src_path.stem}_T{src_path.suffix}"
+
+            src = np.memmap(src_path, dtype=np.uint8, mode="r", shape=(rows, cols))
             dst = np.memmap(out_path, dtype=np.uint8, mode="w+", shape=(cols, rows))
 
             block = 1024
+
             for i in range(0, rows, block):
                 for j in range(0, cols, block):
                     sub = src[i : i + block, j : j + block]
                     dst[j : j + block, i : i + block] = sub.T
 
             dst.flush()
+
             logger.info(f"Transposed file written to {out_path}")
-            logger.info(f"Input: {rows}*{cols}, Output: {cols}*{rows}")
+            logger.info(f"Input: {rows}x{cols}, Output: {cols}x{rows}")
+
+            del src
+            del dst
 
             try:
-                self.in_path.unlink()
-                logger.info(f"{self.in_path} removed")
+                src_path.unlink()
+                logger.info(f"Removed intermediate encoded file: {src_path}")
             except Exception as e:
-                logger.error(f"deleting {self.in_path} failed: {e}")
+                logger.error(f"Could not remove intermediate file {src_path}: {e}")
 
             self.out_path = out_path
+            self.output_size = out_path.stat().st_size
+
             return out_path
 
         except Exception as e:
             logger.error(f"Transpose failed: {e}")
-            raise RuntimeError(f"Transpose failed for {self.in_path}") from e
+            raise RuntimeError(f"Transpose failed for {self.out_path}") from e
 
     def encode(self):
         try:
