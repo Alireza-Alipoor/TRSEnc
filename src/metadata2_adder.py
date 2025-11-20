@@ -80,13 +80,9 @@ class Metadata2Adder:
     def _build_metadata_bytes(self, label):
         meta = {
             "gap_from_eof": self.gaps[label],
-            "file_size": self.file_size,
             "size_before_padding": self.size_before_padding,
-            "padding": {
-                "configured_size": self.padding_config,
-                "applied_size": self.padding_applied,
-            },
-            "reed_solomon": dict(self.rs_params),
+            "padding": self.padding_applied,
+            "rs": dict(self.rs_params),
         }
 
         json_bytes = json.dumps(meta, separators=(",", ":")).encode("utf-8")
