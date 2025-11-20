@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.config_reader import read_config
+from src.encoding.config_reader import read_config
 from src.encoding.metadata1_appender import Metadata1Appender
 from src.encoding.metadata2_adder import Metadata2Adder
 from src.encoding.padding_prepend import PaddingAdder
