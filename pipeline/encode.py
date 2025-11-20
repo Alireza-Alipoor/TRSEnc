@@ -2,6 +2,7 @@ from pathlib import Path
 
 from src.config_reader import read_config
 from src.metadata1_appender import Metadata1Appender
+from src.metadata2_adder import Metadata2Adder
 from src.padding_prepend import PaddingAdder
 from src.rs_encoding import RSEncoding
 
@@ -19,3 +20,6 @@ if __name__ == "__main__":
 
     padding = PaddingAdder(configs, rs_encoded_file)
     padded_file = padding.run()
+
+    Metadata2Adde = Metadata2Adder(configs, padded_file)
+    Metadata2Adde.run()
