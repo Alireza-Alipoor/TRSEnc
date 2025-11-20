@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 
 class PaddingAdder:
-    def __init__(self, in_path: Path, config):
+    def __init__(self, config, in_path: Path):
         self.in_path = in_path
         self.input_size = in_path.stat().st_size
         self.padding_size = min(config["encoding"]["padding_size"], self.input_size)
@@ -66,3 +66,4 @@ class PaddingAdder:
 
     def run(self):
         self.add_padding()
+        return self.in_path
