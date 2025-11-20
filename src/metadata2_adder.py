@@ -33,6 +33,8 @@ class Metadata2Adder:
         self.padding_applied = self._calculate_applied_padding()
         self.size_before_padding = self.file_size - self.padding_applied
 
+        self.encoded_suffix = self.encoding_cfg.get("encoded_file_suffix", "")
+
     def _parse_delimiter(self, value):
         if isinstance(value, (bytes, bytearray)):
             return bytes(value)
@@ -77,7 +79,6 @@ class Metadata2Adder:
 
     def _build_metadata_bytes(self, label):
         meta = {
-            "label": label,
             "gap_from_eof": self.gaps[label],
             "file_size": self.file_size,
             "size_before_padding": self.size_before_padding,
@@ -90,9 +91,9 @@ class Metadata2Adder:
 
         json_bytes = json.dumps(meta, separators=(",", ":")).encode("utf-8")
         length = len(json_bytes)
-        length_bytes = length.to_bytes(4, "big")  # 4-byte big-endian length
+        length_bytes = length.to_bytes(4, "big")
 
-        # final layout: [delimiter][length][json]
+        # Write:  [delimiter][length][json]
         return self.delimiter + length_bytes + json_bytes
 
     def _calculate_positions(self):
@@ -136,5 +137,21 @@ class Metadata2Adder:
         logger.info("Finished writing metadata2 records")
         return self.file_path
 
+    def _ensure_encoded_suffix(self):
+        # if it already ends with the suffix, do nothing
+        if self.encoded_suffix and str(self.file_path).endswith(self.encoded_suffix):
+            return self.file_path
+
+        if not self.encoded_suffix:
+            return self.file_path
+
+        # e.g. artifacts/test_10 -> artifacts/test_10.dll
+        new_path = self.file_path.with_name(self.file_path.name + self.encoded_suffix)
+        self.file_path.rename(new_path)
+        self.file_path = new_path
+        return new_path
+
     def run(self):
-        return self.add_metadata()
+        self.add_metadata()
+        final_path = self._ensure_encoded_suffix()
+        return final_path
