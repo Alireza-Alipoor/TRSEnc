@@ -1,10 +1,10 @@
 from pathlib import Path
 
 from src.config_reader import read_config
-from src.metadata1_appender import Metadata1Appender
-from src.metadata2_adder import Metadata2Adder
-from src.padding_prepend import PaddingAdder
-from src.rs_encoding import RSEncoding
+from src.encoding.metadata1_appender import Metadata1Appender
+from src.encoding.metadata2_adder import Metadata2Adder
+from src.encoding.padding_prepend import PaddingAdder
+from src.encoding.rs_encoding import RSEncoding
 
 if __name__ == "__main__":
 
