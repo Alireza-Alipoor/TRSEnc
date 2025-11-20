@@ -1,16 +1,16 @@
 from pathlib import Path
 
-from logger import get_logger
+from .logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class Metadata2Adder:
 
-    def __init__(self, file_path: Path, config):
+    def __init__(self, config, file_path: Path):
         self.in_path = file_path
         self.rs_configs = config["encoding"]["reed_solomon"]
-        self.padding_size = config["encoding"]["pading_size"]
+        self.padding_size = config["encoding"]["padding_size"]
         self.delimiter = config["encoding"]["delimiter"]
         self.encoded_file_suffix = config["encoding"]["encoded_file_suffix"]
 
