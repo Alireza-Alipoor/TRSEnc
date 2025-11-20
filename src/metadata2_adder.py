@@ -100,11 +100,15 @@ class Metadata2Adder:
         size = self.file_size
 
         for label, gap in self.gaps.items():
-            start = size - gap
-            if start < 0:
-                raise ValueError(
-                    f"Gap for {label} ({gap}) is larger than file size ({size})"
+            if gap >= size:
+                start = 0
+                logger.warning(
+                    f"Gap for {label} ({gap}) >= file size ({size}); "
+                    f"using offset 0 instead."
                 )
+            else:
+                start = size - gap
+
             positions[label] = start
 
         return positions
