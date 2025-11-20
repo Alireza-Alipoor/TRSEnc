@@ -8,6 +8,7 @@ encoding:
     c_exp: 8                         # Galois Field exponent (2^c_exp)
     single_gen: True                 # Use single generator polynomial
   destination_directory: "artifacts" 
-  encoded_file_suffix : "bak"    
+  encoded_file_suffix : "dll"    
   padding_size:  1073741824           #padding size = 1 Gb
+  delimiter: b"\xDE\xAD\xBE\xEF"
 decoding:
