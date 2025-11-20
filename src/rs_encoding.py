@@ -21,10 +21,9 @@ class RSEncoding:
         )
         self.out_path = self.encoded_path
         self.output_size = None
-        self._intermediate_to_delete = None
 
     def encode(self):
-        logger.info("Started Reed–Solomon encoding")
+        logger.info("Started Reed-Solomon encoding")
         try:
             with open(self.in_path, "rb") as fin, open(self.encoded_path, "wb") as fout:
                 while True:
@@ -85,7 +84,6 @@ class RSEncoding:
                 del src
                 del dst
 
-            self._intermediate_to_delete = src_path
             self.out_path = out_path
             self.output_size = out_path.stat().st_size
 
@@ -96,14 +94,14 @@ class RSEncoding:
             raise RuntimeError(f"Transpose failed for {self.out_path}") from e
 
     def cleanup_intermediate_files(self):
-        target = self._intermediate_to_delete
-        if not target:
-            return
-        try:
-            target.unlink()
-            logger.info(f"Deleted intermediate file: {target}")
-        except Exception as e:
-            logger.error(f"Failed to delete intermediate file {target}: {e}")
+        files_to_delete = [self.in_path, self.encoded_path]
+        for target in files_to_delete:
+            try:
+                if target.exists():
+                    target.unlink()
+                    logger.info(f"Deleted intermediate file: {target}")
+            except Exception as e:
+                logger.error(f"Failed to delete file {target}: {e}")
 
     def run(self):
         self.encode()
