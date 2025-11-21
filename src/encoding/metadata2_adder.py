@@ -1,5 +1,6 @@
 import ast
 import json
+import mmap
 from pathlib import Path
 
 from src.logging.logger import get_logger
@@ -118,19 +119,57 @@ class Metadata2Adder:
 
         positions = self._calculate_positions()
 
-        for label, offset in sorted(positions.items(), key=lambda kv: kv[1]):
-            record = self._build_metadata_bytes(label)
+        # Open the file in read-write binary mode
+        with open(self.file_path, "r+b") as f:
+            # Memory-map the file
+            mmapped_file = mmap.mmap(f.fileno(), 0)
 
-            logger.info(
-                f"Writing {label} metadata at offset {offset} "
-                f"(gap_from_eof={self.gaps[label]}, record_len={len(record)})"
-            )
+            # Loop through the positions and insert the metadata
+            for label, offset in sorted(positions.items(), key=lambda kv: kv[1]):
+                record = self._build_metadata_bytes(label)
 
-            with open(self.file_path, "r+b") as f:
-                f.seek(offset)
-                f.write(record)
+                logger.info(
+                    f"Inserting {label} metadata at offset {offset} "
+                    f"(gap_from_eof={self.gaps[label]}, record_len={len(record)})"
+                )
 
-        logger.info("Finished writing metadata2 records")
+                # Ensure there's enough space by shifting data after the offset
+                remaining_data = mmapped_file[offset:]
+
+                # First, resize the file by extending it to accommodate the new metadata
+                new_file_size = self.file_size + len(record)
+
+                # Unmap the memory-mapped file before truncating
+                mmapped_file.close()
+
+                try:
+                    # Resize the file
+                    f.truncate(new_file_size)
+                    logger.info(f"Resized file to {new_file_size} bytes")
+                except PermissionError as e:
+                    logger.error(f"Failed to resize the file: {e}")
+                    raise  # Raise the error after logging it
+
+                # Re-map the file after resizing
+                mmapped_file = mmap.mmap(f.fileno(), 0)
+
+                # Shift the data after the insertion point
+                mmapped_file[offset + len(record) :] = remaining_data
+
+                # Write the metadata at the correct offset
+                mmapped_file[offset : offset + len(record)] = record
+
+                # Clean up any remaining extra bytes by truncating to the new file size
+                f.truncate(new_file_size)
+
+                # Update the file size to reflect the newly inserted metadata
+                self.file_size = new_file_size
+
+            # Flush the changes to the file and close the mmap object
+            mmapped_file.flush()
+            mmapped_file.close()
+
+        logger.info("Finished inserting metadata2 records")
         return self.file_path
 
     def _ensure_encoded_suffix(self):
