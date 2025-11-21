@@ -10,6 +10,7 @@ logger = get_logger(__name__)
 
 class Metadata2Adder:
     def __init__(self, config, file_path: Path):
+        """Initialize the Metadata2Adder with configuration and file path."""
         self.config = config
         self.file_path = Path(file_path)
 
@@ -25,18 +26,12 @@ class Metadata2Adder:
 
         self.delimiter = self._parse_delimiter(self.meta2_cfg.get("delimiter", b""))
 
-        self.gaps = {
-            "d1": int(self.meta2_cfg.get("d1_gap", 0)),
-            "d2": int(self.meta2_cfg.get("d2_gap", 0)),
-            "d3": int(self.meta2_cfg.get("d3_gap", 0)),
-        }
-
         self.padding_applied = self._calculate_applied_padding()
-        self.size_before_padding = self.file_size - self.padding_applied
 
         self.encoded_suffix = self.encoding_cfg.get("encoded_file_suffix", "")
 
     def _parse_delimiter(self, value):
+        """Parse the delimiter value for metadata."""
         if isinstance(value, (bytes, bytearray)):
             return bytes(value)
 
@@ -53,6 +48,7 @@ class Metadata2Adder:
         raise TypeError(f"Unsupported delimiter type: {type(value)}")
 
     def _calculate_applied_padding(self):
+        """Calculate how much padding has been applied to the file."""
         s = self.file_size
         p = self.padding_config
 
@@ -78,10 +74,10 @@ class Metadata2Adder:
         )
         return padding
 
-    def _build_metadata_bytes(self, label):
+    def _build_metadata_bytes(self):
+        """Build the metadata bytes to be appended to the file."""
         meta = {
-            "gap_from_eof": self.gaps[label],
-            "size_before_padding": self.size_before_padding,
+            "size_before_padding": self.file_size - self.padding_applied,
             "padding": self.padding_applied,
             "rs": dict(self.rs_params),
         }
@@ -90,103 +86,40 @@ class Metadata2Adder:
         length = len(json_bytes)
         length_bytes = length.to_bytes(4, "big")
 
-        # Write:  [delimiter][length][json]
-        return self.delimiter + length_bytes + json_bytes
-
-    def _calculate_positions(self):
-        positions = {}
-        size = self.file_size
-
-        for label, gap in self.gaps.items():
-            if gap >= size:
-                start = 0
-                logger.warning(
-                    f"Gap for {label} ({gap}) >= file size ({size}); "
-                    f"using offset 0 instead."
-                )
-            else:
-                start = size - gap
-
-            positions[label] = start
-
-        return positions
+        # Wrap the metadata with delimiters
+        return self.delimiter + length_bytes + json_bytes + self.delimiter
 
     def add_metadata(self):
-        logger.info(
-            f"Adding metadata2 to {self.file_path} "
-            f"(size={self.file_size}, padding_applied={self.padding_applied})"
-        )
+        logger.info(f"Appending metadata2 to {self.file_path} (size={self.file_size})")
 
-        positions = self._calculate_positions()
+        metadata_record = self._build_metadata_bytes()
 
-        # Open the file in read-write binary mode
-        with open(self.file_path, "r+b") as f:
-            # Memory-map the file
-            mmapped_file = mmap.mmap(f.fileno(), 0)
+        try:
+            # Open the file in append mode and write the metadata
+            with open(self.file_path, "ab") as f:
+                f.write(metadata_record)
+                logger.info(f"Successfully appended metadata2 to {self.file_path}")
+        except IOError as e:
+            logger.error(f"Failed to append metadata2 to {self.file_path}: {e}")
+            raise
 
-            # Loop through the positions and insert the metadata
-            for label, offset in sorted(positions.items(), key=lambda kv: kv[1]):
-                record = self._build_metadata_bytes(label)
-
-                logger.info(
-                    f"Inserting {label} metadata at offset {offset} "
-                    f"(gap_from_eof={self.gaps[label]}, record_len={len(record)})"
-                )
-
-                # Ensure there's enough space by shifting data after the offset
-                remaining_data = mmapped_file[offset:]
-
-                # First, resize the file by extending it to accommodate the new metadata
-                new_file_size = self.file_size + len(record)
-
-                # Unmap the memory-mapped file before truncating
-                mmapped_file.close()
-
-                try:
-                    # Resize the file
-                    f.truncate(new_file_size)
-                    logger.info(f"Resized file to {new_file_size} bytes")
-                except PermissionError as e:
-                    logger.error(f"Failed to resize the file: {e}")
-                    raise  # Raise the error after logging it
-
-                # Re-map the file after resizing
-                mmapped_file = mmap.mmap(f.fileno(), 0)
-
-                # Shift the data after the insertion point
-                mmapped_file[offset + len(record) :] = remaining_data
-
-                # Write the metadata at the correct offset
-                mmapped_file[offset : offset + len(record)] = record
-
-                # Clean up any remaining extra bytes by truncating to the new file size
-                f.truncate(new_file_size)
-
-                # Update the file size to reflect the newly inserted metadata
-                self.file_size = new_file_size
-
-            # Flush the changes to the file and close the mmap object
-            mmapped_file.flush()
-            mmapped_file.close()
-
-        logger.info("Finished inserting metadata2 records")
         return self.file_path
 
     def _ensure_encoded_suffix(self):
-        # if it already ends with the suffix, do nothing
+        """Ensure the file has the correct encoded suffix."""
         if self.encoded_suffix and str(self.file_path).endswith(self.encoded_suffix):
             return self.file_path
 
         if not self.encoded_suffix:
             return self.file_path
 
-        # e.g. artifacts/test_10 -> artifacts/test_10.dll
         new_path = self.file_path.with_name(self.file_path.name + self.encoded_suffix)
         self.file_path.rename(new_path)
         self.file_path = new_path
         return new_path
 
     def run(self):
+        """Run the process of appending metadata and ensuring the suffix."""
         self.add_metadata()
         final_path = self._ensure_encoded_suffix()
         return final_path

@@ -12,7 +12,4 @@ encoding:
   encoded_file_suffix : ".dll"    
   metadata2:
     delimiter: b"\xDE\xAD\xBE\xEF"
-    d1_gap: 0                         # 0 B
-    d2_gap: 131072                    # 128 KiB
-    d3_gap: 1073741824                # 1 GiB
 decoding:
