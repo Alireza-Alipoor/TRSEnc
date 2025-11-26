@@ -1,6 +1,5 @@
 import ast
 import json
-import mmap
 from pathlib import Path
 
 from src.logging.logger import get_logger
@@ -86,8 +85,7 @@ class Metadata2Adder:
         length = len(json_bytes)
         length_bytes = length.to_bytes(4, "big")
 
-        # Wrap the metadata with delimiters
-        return self.delimiter + length_bytes + json_bytes + self.delimiter
+        return self.delimiter + length_bytes + json_bytes
 
     def add_metadata(self):
         logger.info(f"Appending metadata2 to {self.file_path} (size={self.file_size})")
