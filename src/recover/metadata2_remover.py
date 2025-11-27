@@ -29,58 +29,49 @@ class Metadata2Remover:
 
         raise TypeError(f"Unsupported delimiter type: {type(value)}")
 
-    def extract_metadata(self, mmapped_file, second_delim_pos, first_delim_pos):
-        """Extract and return the metadata between the delimiters."""
-        metadata_bytes = mmapped_file[
-            first_delim_pos + len(self.delimiter) : second_delim_pos
+    def extract_metadata(self, mmapped_file, first_delim_pos):
+        """Extract and return the metadata after the delimiter."""
+        # After the delimiter, the next 4 bytes represent the length of the metadata
+        length_bytes = mmapped_file[
+            first_delim_pos
+            + len(self.delimiter) : first_delim_pos
+            + len(self.delimiter)
+            + 4
         ]
+        length = int.from_bytes(length_bytes, byteorder="big")
 
-        try:
-            length_bytes = metadata_bytes[:4]
-            length = int.from_bytes(length_bytes, byteorder="big")
+        # Extract the metadata based on the length
+        metadata_bytes = mmapped_file[
+            first_delim_pos
+            + len(self.delimiter)
+            + 4 : first_delim_pos
+            + len(self.delimiter)
+            + 4
+            + length
+        ]
+        metadata = json.loads(metadata_bytes.decode("utf-8"))
 
-            metadata_json = metadata_bytes[4 : 4 + length]
-            metadata = json.loads(metadata_json.decode("utf-8"))
-            return metadata
-        except Exception as e:
-            raise ValueError(f"Failed to extract and parse metadata: {e}")
+        return metadata
 
     def remove_metadata2(self):
-        """Remove metadata2 and any bytes after the second delimiter."""
+        """Remove metadata2 and any bytes after the delimiter."""
         with open(self.file_path, "r+b") as file:
             mmapped_file = mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ)
 
-            second_delim_pos = mmapped_file.rfind(self.delimiter)
-            if second_delim_pos == -1:
-                raise ValueError("Second delimiter not found in the file.")
-
-            first_delim_pos = mmapped_file.rfind(self.delimiter, 0, second_delim_pos)
+            # Search backward for the delimiter
+            first_delim_pos = mmapped_file.rfind(self.delimiter)
             if first_delim_pos == -1:
-                raise ValueError("First delimiter not found in the file.")
+                raise ValueError("Delimiter not found in the file.")
 
-            metadata = self.extract_metadata(
-                mmapped_file, second_delim_pos, first_delim_pos
-            )
+            metadata = self.extract_metadata(mmapped_file, first_delim_pos)
 
             mmapped_file.close()
 
             with open(self.file_path, "r+b") as file:
                 file.truncate(first_delim_pos)
-
-        print(
-            f"Metadata2 removed. The file size is now {Path(self.file_path).stat().st_size} bytes."
-        )
         return metadata
 
     def run(self):
         """Execute the metadata removal process and return the metadata."""
         metadata = self.remove_metadata2()
         return metadata, self.file_path
-
-
-if __name__ == "__main__":
-    from src.encoding.config_reader import read_config
-
-    path = Path(input())
-    m = Metadata2Remover(read_config("configs/configs.yaml"), path)
-    print(m.run())
