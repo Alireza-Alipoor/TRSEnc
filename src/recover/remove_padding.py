@@ -8,7 +8,7 @@ logger = get_logger(__name__)
 
 
 class PaddingRemover:
-    def __init__(self, config, file_path: Path, padding_size: int):
+    def __init__(self, padding_size: int, file_path: Path):
         self.file_path = file_path
         self.padding_size = padding_size
         self.input_size = self.file_path.stat().st_size
